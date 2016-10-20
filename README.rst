@@ -1,5 +1,5 @@
-cornice.ext.sphinx
-==================
+cornice_sphinx
+==============
 
 *Cornice extension to generate Sphinx doc*
 
@@ -27,7 +27,7 @@ Sphinx project :file:`conf.py` file::
     import cornice
 
     sys.path.insert(0, os.path.abspath(cornice.__file__))
-    extensions = ['cornice.ext.sphinxext']
+    extensions = ['cornice_sphinx']
 
 Of course this may vary if you have other extensions.
 
