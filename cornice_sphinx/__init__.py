@@ -13,7 +13,8 @@ try:
 except ImportError:
     pass
 
-from cornice.util import to_list, is_string, PY3
+from six import PY3
+from cornice.util import to_list, is_string
 from cornice.service import get_services, clear_services
 
 import docutils
