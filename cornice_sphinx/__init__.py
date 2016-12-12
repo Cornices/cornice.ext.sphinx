@@ -299,6 +299,7 @@ def rst2node(data):
     document.settings.tab_width = 4
     document.settings.pep_references = False
     document.settings.rfc_references = False
+    document.settings.character_level_inline_markup = False
     document.settings.env = Env()
     parser.parse(data, document)
     if len(document.children) == 1:
