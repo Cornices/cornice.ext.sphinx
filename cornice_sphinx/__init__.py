@@ -20,7 +20,9 @@ import docutils
 from docutils import nodes, core
 from docutils.parsers.rst import Directive, directives
 from docutils.writers.html4css1 import Writer, HTMLTranslator
+from pyramid.path import DottedNameResolver
 from sphinx.util.docfields import DocFieldTransformer
+
 
 MODULES = {}
 PY3 = sys.version_info[0] == 3
@@ -111,6 +113,20 @@ class ServiceDirective(Directive):
         else:
             return format_docstring(obj)
 
+    @staticmethod
+    def _get_attributes(schema, location):
+        """Return the schema's children, filtered by location."""
+        schema = DottedNameResolver(__name__).maybe_resolve(schema)
+
+        def _filter(attr):
+            if not hasattr(attr, "location"):
+                valid_location = 'body' in location
+            else:
+                valid_location = attr.location in to_list(location)
+            return valid_location
+
+        return list(filter(_filter, schema().children))
+
     def _render_service(self, service):
         service_id = "service-%d" % self.env.new_serialno('service')
         service_node = nodes.section(ids=[service_id])
@@ -119,7 +135,7 @@ class ServiceDirective(Directive):
         service_node += nodes.title(text=title)
 
         if service.description is not None:
-            service_node += rst2node(trim(service.description))
+            service_node += rst2node(trim(service.description), self.env)
 
         for method, view, args in service.definitions:
             if method == 'HEAD':
@@ -136,7 +152,8 @@ class ServiceDirective(Directive):
 
                 attrs_node = nodes.inline()
                 for location in ('header', 'querystring', 'body'):
-                    attributes = schema.get_attributes(location=location)
+                    attributes = self._get_attributes(schema,
+                                                      location=location)
                     if attributes:
                         attrs_node += nodes.inline(
                             text='values in the %s' % location)
@@ -195,7 +212,7 @@ class ServiceDirective(Directive):
 
                     method_node += accept_node
 
-            node = rst2node(docstring)
+            node = rst2node(docstring, self.env)
             DocFieldTransformer(self).transform_all(node)
             if node is not None:
                 method_node += node
@@ -283,12 +300,7 @@ def rst2html(data):
     return core.publish_string(data, writer=_FragmentWriter())
 
 
-class Env(object):
-    temp_data = {}
-    docname = ''
-
-
-def rst2node(data):
+def rst2node(data, env):
     """Converts a reStructuredText into its node
     """
     if not data:
@@ -300,15 +312,14 @@ def rst2node(data):
     document.settings.pep_references = False
     document.settings.rfc_references = False
     document.settings.character_level_inline_markup = False
-    document.settings.env = Env()
-    document.settings.env.ref_context = {}
+    document.settings.env = env
     parser.parse(data, document)
     if len(document.children) == 1:
-        return document.children[0]
+        return document.children[0].deepcopy()
     else:
         par = docutils.nodes.paragraph()
         for child in document.children:
-            par += child
+            par += child.deepcopy()
         return par
 
 
