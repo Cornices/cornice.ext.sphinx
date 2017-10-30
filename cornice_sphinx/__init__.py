@@ -301,6 +301,7 @@ def rst2node(data):
     document.settings.rfc_references = False
     document.settings.character_level_inline_markup = False
     document.settings.env = Env()
+    document.settings.env.ref_context = {}
     parser.parse(data, document)
     if len(document.children) == 1:
         return document.children[0]
