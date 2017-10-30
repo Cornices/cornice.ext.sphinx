@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 
-from cornice.util import to_list, is_string, PY3
+from cornice.util import to_list, is_string
 from cornice.service import get_services, clear_services
 
 import docutils
@@ -23,6 +23,7 @@ from docutils.writers.html4css1 import Writer, HTMLTranslator
 from sphinx.util.docfields import DocFieldTransformer
 
 MODULES = {}
+PY3 = sys.version_info[0] == 3
 
 
 def convert_to_list(argument):

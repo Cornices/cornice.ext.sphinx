@@ -25,7 +25,7 @@ class TestServiceDirective(TestCase):
 
         self.directive = ServiceDirective(
             'test', [], {}, [], 1, 1, 'test', param, 1)
-        self.directive.options['app'] = 'cornice.tests.ext.dummy'
+        self.directive.options['app'] = 'tests.dummy'
         self.directive.options['services'] = ['users', "thing_service"]
 
     def test_module_reload(self):
