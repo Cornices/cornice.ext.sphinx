@@ -16,7 +16,7 @@ requires = [
 ]
 
 setup(name='cornice_sphinx',
-    version='0.3',
+    version='0.4.dev0',
     description='Generate Sphinx documentation from a Cornice application',
     long_description=README,
     license='Apache License (2.0)',
