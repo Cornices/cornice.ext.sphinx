@@ -4,6 +4,8 @@
 import mock
 from unittest import TestCase
 
+from pyramid import testing as pyramid_testing
+
 from cornice_sphinx import rst2html, ServiceDirective
 
 
@@ -20,6 +22,16 @@ class TestServiceDirective(TestCase):
 
     def setUp(self):
         super(TestServiceDirective, self).setUp()
+        config = pyramid_testing.setUp()
+
+        def Configurator(settings):
+            return config
+
+        # We need to mock the Configurator, otherwise each test uses the global registry to create
+        # test resources. This leads to an error with Cornice >= 1.4, where resources conflicts
+        # became an error.
+        self.config_patch = mock.patch('tests.dummy.Configurator', Configurator)
+        self.config_patch.start()
         param = mock.Mock()
         param.document.settings.env.new_serialno.return_value = 1
 
@@ -27,6 +39,11 @@ class TestServiceDirective(TestCase):
             'test', [], {}, [], 1, 1, 'test', param, 1)
         self.directive.options['app'] = 'tests.dummy'
         self.directive.options['services'] = ['users', "thing_service"]
+
+    def tearDown(self):
+        self.config_patch.stop()
+        pyramid_testing.tearDown()
+        super(TestServiceDirective, self).tearDown()
 
     def test_module_reload(self):
         self.directive.options['app'] = None
