@@ -17,6 +17,15 @@ class TestUtil(TestCase):
         self.assertEqual(res, b'<p><strong>simple render</strong></p>')
         self.assertEqual(rst2html(''), '')
 
+    def test_from_json_to_dict(self):
+        from cornice_sphinx import from_json_to_dict
+
+        argument = '{"user": "customer", "data": "information"}'
+        self.assertEqual(
+            from_json_to_dict(argument),
+            {'user': 'customer', 'data': 'information'},
+        )
+
 
 class TestServiceDirective(TestCase):
 
@@ -64,3 +73,9 @@ class TestServiceDirective(TestCase):
         # than str.__doc__.
         ret = self.directive.run()
         self.assertNotIn("str(object='') -> string", str(ret[0]))
+
+    def test_docstring_replace(self):
+        self.directive.options['docstring-replace'] = {
+            'user': 'customer', 'data': 'information'}
+        ret = self.directive.run()
+        self.assertIn('Returns the customer information', str(ret[0]))
