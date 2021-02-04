@@ -8,6 +8,7 @@ Sphinx extension that is able to convert a service into a documentation.
 import sys
 import json
 from importlib import import_module
+
 try:
     from importlib import reload
 except ImportError:
@@ -33,17 +34,17 @@ def convert_to_list(argument):
     if argument is None:
         return []
     else:
-        return [i.strip() for i in argument.split(',')]
+        return [i.strip() for i in argument.split(",")]
 
 
 def convert_to_list_required(argument):
     if argument is None:
-        raise ValueError('argument required but none supplied')
+        raise ValueError("argument required but none supplied")
     return convert_to_list(argument)
 
 
 class ServiceDirective(Directive):
-    """ Service directive.
+    """Service directive.
 
     Injects sections in the documentation about the services registered in the
     given module.
@@ -58,13 +59,16 @@ class ServiceDirective(Directive):
             :ignore: a comma separated list of services names to ignore
 
     """
+
     has_content = True
-    option_spec = {'modules': convert_to_list,
-                   'app': directives.unchanged,
-                   'service': directives.unchanged,
-                   'services': convert_to_list,
-                   'ignore': convert_to_list}
-    domain = 'cornice'
+    option_spec = {
+        "modules": convert_to_list,
+        "app": directives.unchanged,
+        "service": directives.unchanged,
+        "services": convert_to_list,
+        "ignore": convert_to_list,
+    }
+    domain = "cornice"
     doc_field_types = []
 
     def __init__(self, *args, **kwargs):
@@ -72,27 +76,28 @@ class ServiceDirective(Directive):
         self.env = self.state.document.settings.env
 
     def run(self):
-        app_name = self.options.get('app')
+        app_name = self.options.get("app")
         if app_name:
             app = import_module(app_name)
             app.main({})
 
         # import the modules, which will populate the SERVICES variable.
-        for module in self.options.get('modules', []):
+        for module in self.options.get("modules", []):
             if module in MODULES:
                 reload(MODULES[module])
             else:
                 MODULES[module] = import_module(module)
 
-        names = self.options.get('services', [])
+        names = self.options.get("services", [])
 
-        service = self.options.get('service')
+        service = self.options.get("service")
         if service is not None:
             names.append(service)
 
         # filter the services according to the options we got
-        services = get_services(names=names or None,
-                                exclude=self.options.get('exclude'))
+        services = get_services(
+            names=names or None, exclude=self.options.get("exclude")
+        )
 
         # clear the SERVICES variable, which will allow to use this
         # directive multiple times
@@ -104,12 +109,12 @@ class ServiceDirective(Directive):
         # Resolve a view or validator to an object if type string
         # and return docstring.
         if is_string(obj):
-            if 'klass' in args:
-                ob = args['klass']
+            if "klass" in args:
+                ob = args["klass"]
                 obj_ = getattr(ob, obj.lower())
                 return format_docstring(obj_)
             else:
-                return ''
+                return ""
         else:
             return format_docstring(obj)
 
@@ -120,7 +125,7 @@ class ServiceDirective(Directive):
 
         def _filter(attr):
             if not hasattr(attr, "location"):
-                valid_location = 'body' in location
+                valid_location = "body" in location
             else:
                 valid_location = attr.location in to_list(location)
             return valid_location
@@ -128,61 +133,59 @@ class ServiceDirective(Directive):
         return list(filter(_filter, schema().children))
 
     def _render_service(self, service):
-        service_id = "service-%d" % self.env.new_serialno('service')
+        service_id = "service-%d" % self.env.new_serialno("service")
         service_node = nodes.section(ids=[service_id])
 
-        title = '%s service at %s' % (service.name.title(), service.path)
+        title = "%s service at %s" % (service.name.title(), service.path)
         service_node += nodes.title(text=title)
 
         if service.description is not None:
             service_node += rst2node(trim(service.description), self.env)
 
         for method, view, args in service.definitions:
-            if method == 'HEAD':
+            if method == "HEAD":
                 # Skip head - this is essentially duplicating the get docs.
                 continue
-            method_id = '%s-%s' % (service_id, method)
+            method_id = "%s-%s" % (service_id, method)
             method_node = nodes.section(ids=[method_id])
             method_node += nodes.title(text=method)
 
             docstring = self._resolve_obj_to_docstring(view, args)
 
-            if 'schema' in args:
-                schema = args['schema']
+            if "schema" in args:
+                schema = args["schema"]
 
                 attrs_node = nodes.inline()
-                for location in ('header', 'querystring', 'body'):
-                    attributes = self._get_attributes(schema,
-                                                      location=location)
+                for location in ("header", "querystring", "body"):
+                    attributes = self._get_attributes(schema, location=location)
                     if attributes:
-                        attrs_node += nodes.inline(
-                            text='values in the %s' % location)
+                        attrs_node += nodes.inline(text="values in the %s" % location)
                         location_attrs = nodes.bullet_list()
 
                         for attr in attributes:
                             temp = nodes.list_item()
 
                             # Get attribute data-type
-                            if hasattr(attr, 'type'):
+                            if hasattr(attr, "type"):
                                 attr_type = attr.type
-                            elif hasattr(attr, 'typ'):
+                            elif hasattr(attr, "typ"):
                                 attr_type = attr.typ.__class__.__name__
                             else:
                                 attr_type = None
 
                             temp += nodes.strong(text=attr.name)
                             if attr_type is not None:
-                                temp += nodes.inline(text=' (%s)' % attr_type)
+                                temp += nodes.inline(text=" (%s)" % attr_type)
                             if not attr.required or attr.description:
-                                temp += nodes.inline(text=' - ')
+                                temp += nodes.inline(text=" - ")
                                 if not attr.required:
                                     if attr.missing is not None:
                                         default = json.dumps(attr.missing)
                                         temp += nodes.inline(
-                                            text='(default: %s) ' % default)
+                                            text="(default: %s) " % default
+                                        )
                                     else:
-                                        temp += nodes.inline(
-                                            text='(optional) ')
+                                        temp += nodes.inline(text="(optional) ")
                                 if attr.description:
                                     temp += nodes.inline(text=attr.description)
 
@@ -191,17 +194,17 @@ class ServiceDirective(Directive):
                         attrs_node += location_attrs
                 method_node += attrs_node
 
-            for validator in args.get('validators', ()):
+            for validator in args.get("validators", ()):
                 docstring += self._resolve_obj_to_docstring(validator, args)
 
-            if 'accept' in args:
-                accept = to_list(args['accept'])
+            if "accept" in args:
+                accept = to_list(args["accept"])
 
                 if callable(accept):
                     if accept.__doc__ is not None:
                         docstring += accept.__doc__.strip()
                 else:
-                    accept_node = nodes.strong(text='Accepted content types:')
+                    accept_node = nodes.strong(text="Accepted content types:")
                     node_accept_list = nodes.bullet_list()
                     accept_node += node_accept_list
 
@@ -217,13 +220,13 @@ class ServiceDirective(Directive):
             if node is not None:
                 method_node += node
 
-            renderer = args['renderer']
-            if renderer == 'simplejson':
-                renderer = 'json'
+            renderer = args["renderer"]
+            if renderer == "simplejson":
+                renderer = "json"
 
             response = nodes.paragraph()
 
-            response += nodes.strong(text='Response: %s' % renderer)
+            response += nodes.strong(text="Response: %s" % renderer)
             method_node += response
 
             service_node += method_node
@@ -232,9 +235,10 @@ class ServiceDirective(Directive):
 
 # Utils
 
+
 def format_docstring(obj):
     """Return trimmed docstring with newline from object."""
-    return trim(obj.__doc__ or "") + '\n'
+    return trim(obj.__doc__ or "") + "\n"
 
 
 def trim(docstring):
@@ -245,7 +249,7 @@ def trim(docstring):
     Implementation taken from http://www.python.org/dev/peps/pep-0257/
     """
     if not docstring:
-        return ''
+        return ""
     # Convert tabs to spaces (following the normal Python rules)
     # and split into a list of lines:
     lines = docstring.expandtabs().splitlines()
@@ -266,22 +270,22 @@ def trim(docstring):
     while trimmed and not trimmed[0]:
         trimmed.pop(0)
     # Return a single string:
-    res = '\n'.join(trimmed)
+    res = "\n".join(trimmed)
     if not PY3 and not isinstance(res, unicode):
-        res = res.decode('utf8')
+        res = res.decode("utf8")
     return res
 
 
 class _HTMLFragmentTranslator(HTMLTranslator):
     def __init__(self, document):
         HTMLTranslator.__init__(self, document)
-        self.head_prefix = ['', '', '', '', '']
+        self.head_prefix = ["", "", "", "", ""]
         self.body_prefix = []
         self.body_suffix = []
         self.stylesheet = []
 
     def astext(self):
-        return ''.join(self.body)
+        return "".join(self.body)
 
 
 class _FragmentWriter(Writer):
@@ -289,24 +293,22 @@ class _FragmentWriter(Writer):
 
     def apply_template(self):
         subs = self.interpolation_dict()
-        return subs['body']
+        return subs["body"]
 
 
 def rst2html(data):
-    """Converts a reStructuredText into its HTML
-    """
+    """Converts a reStructuredText into its HTML"""
     if not data:
-        return ''
+        return ""
     return core.publish_string(data, writer=_FragmentWriter())
 
 
 def rst2node(data, env):
-    """Converts a reStructuredText into its node
-    """
+    """Converts a reStructuredText into its node"""
     if not data:
         return
     parser = docutils.parsers.rst.Parser()
-    document = docutils.utils.new_document('<>')
+    document = docutils.utils.new_document("<>")
     document.settings = docutils.frontend.OptionParser().get_default_values()
     document.settings.tab_width = 4
     document.settings.pep_references = False
@@ -325,5 +327,5 @@ def rst2node(data, env):
 
 def setup(app):
     """Hook the directives when Sphinx ask for it."""
-    app.add_directive('services', ServiceDirective)  # deprecated
-    app.add_directive('cornice-autodoc', ServiceDirective)
+    app.add_directive("services", ServiceDirective)  # deprecated
+    app.add_directive("cornice-autodoc", ServiceDirective)
