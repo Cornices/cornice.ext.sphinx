@@ -132,6 +132,39 @@ class ServiceDirective(Directive):
 
         return list(filter(_filter, schema().children))
 
+    def _render_element_recursively(self, attr):
+        temp = nodes.list_item()
+
+        # Get attribute data-type
+        if hasattr(attr, "type"):
+            attr_type = attr.type
+        elif hasattr(attr, "typ"):
+            attr_type = attr.typ.__class__.__name__
+        else:
+            attr_type = None
+
+        temp += nodes.strong(text=attr.name)
+        if attr_type is not None:
+            temp += nodes.inline(text=" (%s)" % attr_type)
+        if not attr.required or attr.description:
+            temp += nodes.inline(text=" - ")
+            if not attr.required:
+                if attr.missing is not None:
+                    default = json.dumps(attr.missing)
+                    temp += nodes.inline(text="(default: %s) " % default)
+                else:
+                    temp += nodes.inline(text="(optional) ")
+            if attr.description:
+                temp += nodes.inline(text=attr.description)
+        if hasattr(attr, "typ") and any(
+            [isinstance(attr.typ, k) for k in [Mapping, Sequence]]
+        ):
+            children_temp = nodes.bullet_list()
+            for child in attr.children:
+                children_temp += self._render_element_recursively(child)
+            temp += children_temp
+        return temp
+
     def _render_service(self, service):
         service_id = "service-%d" % self.env.new_serialno("service")
         service_node = nodes.section(ids=[service_id])
@@ -163,33 +196,7 @@ class ServiceDirective(Directive):
                         location_attrs = nodes.bullet_list()
 
                         for attr in attributes:
-                            temp = nodes.list_item()
-
-                            # Get attribute data-type
-                            if hasattr(attr, "type"):
-                                attr_type = attr.type
-                            elif hasattr(attr, "typ"):
-                                attr_type = attr.typ.__class__.__name__
-                            else:
-                                attr_type = None
-
-                            temp += nodes.strong(text=attr.name)
-                            if attr_type is not None:
-                                temp += nodes.inline(text=" (%s)" % attr_type)
-                            if not attr.required or attr.description:
-                                temp += nodes.inline(text=" - ")
-                                if not attr.required:
-                                    if attr.missing is not None:
-                                        default = json.dumps(attr.missing)
-                                        temp += nodes.inline(
-                                            text="(default: %s) " % default
-                                        )
-                                    else:
-                                        temp += nodes.inline(text="(optional) ")
-                                if attr.description:
-                                    temp += nodes.inline(text=attr.description)
-
-                            location_attrs += temp
+                            location_attrs += self._render_element_recursively(attr)
 
                         attrs_node += location_attrs
                 method_node += attrs_node
