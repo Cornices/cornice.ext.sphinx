@@ -15,10 +15,12 @@ requires = [
     'docutils'
 ]
 
-setup(name='cornice_sphinx',
-    version='0.4.dev0',
+setup(
+    name='cornice_sphinx',
+    version='0.4',
     description='Generate Sphinx documentation from a Cornice application',
     long_description=README,
+    long_description_content_type="text/markdown",
     license='Apache License (2.0)',
     classifiers=[
         "Programming Language :: Python",
