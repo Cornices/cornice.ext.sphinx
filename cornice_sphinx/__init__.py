@@ -42,6 +42,14 @@ def convert_to_list_required(argument):
     return convert_to_list(argument)
 
 
+def from_json_to_dict(argument):
+    """Loads json data"""
+    if argument is None:
+        return {}
+    else:
+        return json.loads(argument)
+
+
 class ServiceDirective(Directive):
     """ Service directive.
 
@@ -56,6 +64,8 @@ class ServiceDirective(Directive):
             :services: name1, name2
             :service: name1 # no need to specify both services and service.
             :ignore: a comma separated list of services names to ignore
+            :docstring-replace: replace certain words in docstring
+
 
     """
     has_content = True
@@ -63,7 +73,8 @@ class ServiceDirective(Directive):
                    'app': directives.unchanged,
                    'service': directives.unchanged,
                    'services': convert_to_list,
-                   'ignore': convert_to_list}
+                   'ignore': convert_to_list,
+                   'docstring-replace': from_json_to_dict}
     domain = 'cornice'
     doc_field_types = []
 
@@ -148,11 +159,17 @@ class ServiceDirective(Directive):
             if method == 'HEAD':
                 # Skip head - this is essentially duplicating the get docs.
                 continue
+
             method_id = '%s-%s' % (service_id, method)
             method_node = nodes.section(ids=[method_id])
             method_node += nodes.title(text=method)
 
             docstring = self._resolve_obj_to_docstring(view, args)
+
+            for replace_key, replace_value in self.options.get(
+                'docstring-replace', {}
+            ).items():
+                docstring = docstring.replace(replace_key, replace_value)
 
             if 'schema' in args:
                 schema = args['schema']

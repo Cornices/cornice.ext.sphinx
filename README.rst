@@ -48,6 +48,7 @@ The directive has the following options:
 - **service**: if you have only one name, then you can use `service` rather
   than `services`. **optional**
 - **ignore**: a comma separated list of services names to ignore. **optional**
+- **docstring-replace**: replace certain words in docstring. **optional**
 
   **module** or **app** are **mandatory**
 
