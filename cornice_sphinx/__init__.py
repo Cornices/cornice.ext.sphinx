@@ -71,6 +71,13 @@ class ServiceDirective(Directive):
         super(ServiceDirective, self).__init__(*args, **kwargs)
         self.env = self.state.document.settings.env
 
+    def get_field_type_map(self):
+        # This is a required Directive method in Sphinx > 3.0.0.
+        # Older versions converted `doc_field_types` to a dict.
+        # But since `doc_field_types` is an empty list here, we can
+        # return an empty dict.
+        return {}
+
     def run(self):
         app_name = self.options.get('app')
         if app_name:
